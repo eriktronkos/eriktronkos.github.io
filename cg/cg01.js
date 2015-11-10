@@ -1,3 +1,6 @@
+
+//setting up variables
+
 /*global THREE, scene, window, document, requestAnimationFrame, console, EDIT*/
 var EDIT_MODE = false;
 var IS_HANDLE = false;
@@ -17,6 +20,7 @@ var renderer = new THREE.WebGLRenderer({ alpha: true });
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.setClearColor(0x333333, 1);
 document.body.appendChild( renderer.domElement );
+
 var geometryLine1, geometryLine2;
 
 var clearScene = function() {
@@ -93,6 +97,7 @@ var drawHandles = function() {
 }
 
 var drawIntersection = function() {
+	//draws intersection at intersection point, if any
 	var geometrySphere = new THREE.SphereGeometry(4 /*radius*/, 32 /*widthSegments*/, 32 /*heightSegments*/);
 	var materialSphere = new THREE.MeshBasicMaterial({ 
 		color: 0xff0000,
@@ -195,10 +200,13 @@ document.addEventListener('mousemove', function (event) {
 	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
 	mouse3 = new THREE.Vector3(mouse.x, mouse.y, 1);
+	//unprojects normalized coordinates to retrieve points in space
 	mouse3.unproject(camera);
 	
 	if (EDIT_MODE && IS_HANDLE){
+		// if handle is pressed
 		switch(WHICH_HANDLE) {
+		// know which handle is being dragged and change its coordinates
 			case '11':
 				points.x01 = mouse3.x;
 				points.y01 = mouse3.y;
