@@ -1,7 +1,5 @@
-
-//setting up variables
-
 /*global THREE, scene, window, document, requestAnimationFrame, console, EDIT*/
+//setting up variables
 var EDIT_MODE = false;
 var IS_HANDLE = false;
 var WHICH_HANDLE = "";
