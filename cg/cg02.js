@@ -8,8 +8,6 @@ offset = new THREE.Vector3(),
 INTERSECTED, SELECTED, ROTATING;
 var ROTATION = false;
 var rotationmsg;
-var previousMouseOffset = {x: 0,y: 0};
-var previousMousePosition = {x: 0,y: 0};
 
 init();
 animate();
@@ -29,7 +27,7 @@ function init() {
 	controls.panSpeed = 0.8;
 	controls.noZoom = true;
 	controls.noPan = false;
-	controls.staticMoving = true	;
+	controls.staticMoving = true;
 	controls.dynamicDampingFactor = 0.2;
 
 	scene = new THREE.Scene();
@@ -59,9 +57,9 @@ function init() {
 		object.position.y = 0;
 		object.position.z = 0;
 
-		object.rotation.x = Math.random() * 2 * Math.PI;
-		object.rotation.y = Math.random() * 2 * Math.PI;
-		object.rotation.z = Math.random() * 2 * Math.PI;
+		object.rotation.x =  2 * Math.PI;
+		object.rotation.y =  2 * Math.PI;
+		object.rotation.z =  2 * Math.PI;
 
 		object.scale.x = 1;
 		object.scale.y = 1;
@@ -81,7 +79,7 @@ function init() {
 	scene.add( plane );
 
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
-	renderer.setClearColor( 0xf0f0f0 );
+	renderer.setClearColor( 0xe9e9e9 );
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	renderer.sortObjects = false;
@@ -96,14 +94,14 @@ function init() {
 	info.style.top = '10px';
 	info.style.width = '100%';
 	info.style.textAlign = 'center';
-	info.innerHTML = 'Erik Tronkos - CG02';
+	info.innerHTML = 'Erik Tronkos - CG02 <br> \'r\' - toggle rotation mode <br> \'c\' - create cube <br> \'d\' - delete cube';
 	container.appendChild( info );
 
 	rotationmsg = document.createElement( 'div' );
 	
 	rotationmsg.id = 'rotationMode'
 	rotationmsg.style.position = 'absolute';
-	rotationmsg.style.top = '30px';
+	rotationmsg.style.top = '100px';
 	rotationmsg.style.width = '100%';
 	rotationmsg.style.textAlign = 'center';
 	rotationmsg.innerHTML = 'MOVE MODE';
@@ -133,19 +131,18 @@ function onDocumentMouseMove( event ) {
 
 	event.preventDefault();
 
-	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;  //normalize mouse coordinates
 	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 	//
-	raycaster.setFromCamera( mouse, camera );
+	raycaster.setFromCamera( mouse, camera ); //cast ray from 'camera'
 
-	if ( SELECTED && !ROTATION) {
+	if ( SELECTED && !ROTATION) { // if translading put plane in the middle of cube to orient translation
 
 		var intersects = raycaster.intersectObject( plane );
 
 		if ( intersects.length > 0 ) {
 
 			SELECTED.position.copy( intersects[ 0 ].point);
-				// .sub( offset ) );
 
 }
 
@@ -153,27 +150,18 @@ return;
 
 }
 
-var intersects = raycaster.intersectObjects( objects );
+var intersects = raycaster.intersectObjects( objects ); //check which cubes are intersected by raycast
 
 if ( intersects.length > 0 ) {
 
 	if ( INTERSECTED != intersects[ 0 ].object ) {
 
-		if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
-
 		INTERSECTED = intersects[ 0 ].object;
-		INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
-
-			// plane.position.copy( INTERSECTED.position );
-			// plane.lookAt( camera.position );
-
 		}
 
 		container.style.cursor = 'pointer';
 
 	} else {
-
-		if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
 
 		INTERSECTED = null;
 
@@ -181,35 +169,18 @@ if ( intersects.length > 0 ) {
 
 	}
 
-	if ( ROTATION && ROTATING && SELECTED) {
-	
-		var deltaMove = {
-			x: event.offsetX-previousMousePosition.x,
-			y: event.offsetY-previousMousePosition.y
-		};
+	if ( ROTATION && ROTATING && SELECTED) { //rotate using arcball mechanics
 
-		var deltaRotationQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-                ((deltaMove.y * Math.PI) / 180 ) /*converting to radians*/,
-                ((deltaMove.x * Math.PI) / 180 ),
-                0,
-                'XYZ'
-            ));
+		deltaX = event.clientX - startPoint.x;
+		deltaY = event.clientY - startPoint.y;
 
-		SELECTED.quaternion.multiplyQuaternions(deltaRotationQuaternion, SELECTED.quaternion);
+		handleRotation();
 
-		previousMouseOffset = {
-			 	x: event.offsetX,
-			 	y: event.offsetY
-			 	};
-		
+		startPoint.x = event.clientX;
+		startPoint.y = event.clientY;
 	
 		
 	}
-	previousMousePosition = {
-		 	x: event.clientX,
-		 	y: event.clientY
-		 	};
-
 }
 
 function onDocumentMouseDown( event ) {
@@ -230,13 +201,14 @@ function onDocumentMouseDown( event ) {
 
 		var intersects = raycaster.intersectObject( plane );
 
-		// if ( intersects.length > 0 ) {
-
-		// 	offset.copy( intersects[ 0 ].point ).sub( plane.position );
-
-		// }
-
 		container.style.cursor = 'move';
+
+		startPoint = {
+			x: event.clientX,
+			y: event.clientY
+		};
+
+		rotateStartPoint = rotateEndPoint = projectOnTrackball(0, 0);
 
 	}
 
@@ -252,17 +224,10 @@ function onDocumentMouseUp( event ) {
 
 	controls.enabled = true;
 
-	if ( INTERSECTED ) {
+	plane.lookAt( camera.position ); 
 
-
-	}
-	else {
-
-		plane.lookAt( camera.position );
-	}
 	container.style.cursor = 'auto';
 		SELECTED = null;
-
 
 	if ( ROTATION ){
 		ROTATING = false;
@@ -272,18 +237,18 @@ function onDocumentMouseUp( event ) {
 
 function onDocumentKeyPressed( event ) {
 
-	if(event.which == 82 /*r*/ && ROTATION == false) {
+	if(event.which == 82 /*r*/ && ROTATION == false) { //toggle rotate mode
 		ROTATION = true;
 		container.children[2].innerHTML = 'ROTATE MODE'
 		
 		return;
 	}
-	else if ( event.which == 82 /*r*/ && ROTATION == true) {
+	else if ( event.which == 82 /*r*/ && ROTATION == true) { //toggle move mode
 		ROTATION = false;
-		container.children[2].innerHTML = 'MOVE MODE';
+		container.children[2].innerHTML = 'MOVE MODE'; 
 		return;
 	}
-	else if ( event.which == 67 /*c*/) {
+	else if ( event.which == 67 /*c*/) { //create cube
 
 		raycaster.setFromCamera( mouse, camera );
 
@@ -304,7 +269,7 @@ function onDocumentKeyPressed( event ) {
 
 		objects.push( object );
 	}
-	else if ( event.which == 68 /*d*/) {
+	else if ( event.which == 68 /*d*/) { //delete cube
 		raycaster.setFromCamera( mouse, camera );
 
 		var intersection = raycaster.intersectObjects( objects );
@@ -314,6 +279,65 @@ function onDocumentKeyPressed( event ) {
 		}
 	}
 }
+
+function projectOnTrackball(touchX, touchY)
+{
+	var mouseOnBall = new THREE.Vector3();
+
+	mouseOnBall.set(
+		clamp(touchX / (window.innerWidth/2), -1, 1), clamp(-touchY / (window.innerHeight/2), -1, 1),
+		0.0
+	);
+
+	var length = mouseOnBall.length();
+
+	if (length > 1.0)
+	{
+		mouseOnBall.normalize();
+	}
+	else
+	{
+		mouseOnBall.z = Math.sqrt(1.0 - length * length);
+	}
+
+	return mouseOnBall;
+}
+
+var handleRotation = function()
+	{
+		console.log(deltaX);
+		console.log(deltaY);
+		rotateEndPoint = projectOnTrackball(deltaX, deltaY);
+
+		var rotateQuaternion = rotateMatrix(rotateStartPoint, rotateEndPoint);
+		curQuaternion = SELECTED.quaternion;
+		curQuaternion.multiplyQuaternions(rotateQuaternion, curQuaternion);
+		curQuaternion.normalize();
+		SELECTED.setRotationFromQuaternion(curQuaternion);
+
+		rotateEndPoint = rotateStartPoint;
+	};
+
+function rotateMatrix(rotateStart, rotateEnd) //creates rotation matrix
+	{
+		var axis = new THREE.Vector3(),
+			quaternion = new THREE.Quaternion();
+
+		var angle = Math.acos(rotateStart.dot(rotateEnd) / rotateStart.length() / rotateEnd.length());
+
+		if (angle)
+		{
+			axis.crossVectors(rotateStart, rotateEnd).normalize();
+			angle *= 2;
+			quaternion.setFromAxisAngle(axis, angle);
+		}
+		return quaternion;
+	}
+
+	function clamp(value, min, max)
+	{
+		return Math.min(Math.max(value, min), max);
+	}
 
 //
 
